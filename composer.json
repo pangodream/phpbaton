@@ -1,0 +1,22 @@
+{
+    "name": "pangodream/phpbaton",
+    "description": "Simple multitask without thread safe PHP version",
+    "type": "library",
+    "require": {
+        "pangodream/php-simpcli": "dev-master",
+        "vlucas/phpdotenv": "^2.5@dev"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "pangodream",
+            "email": "development@pangodream.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-0":{
+            "Baton": "src/"
+        }
+    }
+}
