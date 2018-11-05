@@ -9,6 +9,7 @@ namespace Baton;
 
 
 use PhpSimpcli\CliParser;
+use Baton\Common;
 
 class Tasker
 {
@@ -19,8 +20,11 @@ class Tasker
     private $response = null;
     private $startTime = null;
     private $endTime = null;
+    private $cnf = null;
 
     public function __construct(){
+        $GLOBALS['MOD_NAME'] = 'tasker';
+        Common::getReady();
         $this->response = new Response();
         $this->response->init();
         $co = new CliParser();
@@ -34,7 +38,7 @@ class Tasker
     }
     private function listenOn($port){
         //try to open a free listening port
-        $this->sock = stream_socket_server("tcp://".$_ENV['LISTENING_INTERFACE'].":".$port, $errno, $errstr);
+        $this->sock = stream_socket_server("tcp://0.0.0.0:".$port, $errno, $errstr);
         if (!$this->sock) {
             echo "$errstr ($errno)<br />\n";
             exit(1);

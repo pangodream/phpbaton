@@ -9,117 +9,63 @@ namespace Baton;
 
 use Baton\Request;
 use Baton\Response;
-use Dotenv\Dotenv;
 use PhpSimpcli\CliParser;
+use Baton\Common;
 
 class Master
 {
+    private $cnf = null;
     public function __construct(){
-        $this->loadConfiguration();
-        $this->evalInvokingOptions();
+        $GLOBALS['MOD_NAME'] = 'master';
+        Common::getReady();
     }
-
-    /**
-     * Checks which option is specified when invoking from the command line
-     */
-    private function evalInvokingOptions(){
-        $co = new CliParser();
-        if($co->get('put')->found){
-            if($co->get('put')->type == 'missing'){
-                die("Error: you must specify a port to set the tasker\n");
-            }
-            $this->createTasker($co->get('put')->value);
-        }
-        if($co->get('ping')->found){
-            if($co->get('ping')->type == 'missing'){
-                die("Error: you must specify a port to ping to\n");
-            }
-            $this->ping($co->get('ping')->value);
-        }
-        if($co->get('kill')->found){
-            if($co->get('kill')->type == 'missing'){
-                die("Error: you must specify a port to kill tasker\n");
-            }
-            $this->kill($co->get('kill')->value);
-        }
-        if($co->get('poolStatus')->found){
-            $this->poolStatus();
-        }
-        if($co->get('createAll')->found){
-            $this->createAll();
-        }
-        if($co->get('killAll')->found){
-            $this->killAll();
-        }
-        if($co->get('test')->found){
-            $this->test($co->get('test')->value);
-        }
-
-    }
-    private function test($mod){
-        if($mod=='1') {
-            $this->kill(6666);
-            $this->createTasker(6666);
-        }
-
-        //$response = $this->request(6666, "NetTool", "getIP", array("domain"=>"www.pangodream.com"));
-        //var_dump($response);
-        //usleep(200000);
-        $response = $this->request(6666, "Tasker", "sendResponse");
-        var_dump($response);
-    }
-
     /**
      * Shows the status of each of the taskers in the pool
      */
-    private function poolStatus(){
+    public function poolStatus(){
+        $pool = array();
         $start = $_ENV['POOL_START'];
         $size = $_ENV['POOL_SIZE'];
         for($i = 0; $i < $size; $i++){
             $port = $start + $i;
-            echo "Tasker ".$port.": ";
             if($this->ping($port)){
-                echo "Up\n";
+                $status = 'Up';
             }else{
-                echo "Down\n";
+                $status = 'Down';
             }
+            $pool[] = array('port' => $port, 'status' => $status);
         }
+        return $pool;
     }
 
     /**
      * Creates all possible taskers in the pool
      */
-    private function createAll(){
+    public function createAll(){
         $start = $_ENV['POOL_START'];
         $size = $_ENV['POOL_SIZE'];
         for($i = 0; $i < $size; $i++){
             $port = $start + $i;
-            echo "Tasker ".$port.": ";
-            if($this->ping($port)){
-                echo "Up\n";
-            }else{
-                echo "Down\n";
+            if(!$this->ping($port)){
                 $this->createTasker($port);
             }
         }
+        return $this->poolStatus();
     }
 
     /**
      * Kills all the taskers in the pool
      */
-    private function killAll(){
+    public function killAll(){
         $start = $_ENV['POOL_START'];
         $size = $_ENV['POOL_SIZE'];
         for($i = 0; $i < $size; $i++){
             $port = $start + $i;
-            echo "Tasker ".$port.": ";
             if($this->ping($port)){
-                echo "Up\n";
                 $this->kill($port);
-            }else{
-                echo "Down\n";
             }
         }
+        return $this->poolStatus();
     }
 
     /**
@@ -128,14 +74,11 @@ class Master
      * @param bool $quiet
      * @return bool
      */
-    private function ping($port, $quiet = true){
+    public function ping($port){
         $ret = false;
         $response = $this->request($port,'Tasker','sendResponse');
         if($response !== false){
-            if(!$quiet) echo "Ping succeed.\n";
             $ret = true;
-        }else{
-            if(!$quiet) echo "Ping failed\n";
         }
         return $ret;
     }
@@ -145,18 +88,13 @@ class Master
      * @param $port
      * @return bool
      */
-    private function kill($port){
+    public function kill($port){
         $ret = false;
         if($this->ping($port)) {
             $response = $this->request($port, 'Tasker', 'suicide');
             if(!$this->ping($port)) {
-                echo "Killing succeed.\n";
                 $ret = true;
-            } else {
-                echo "Killing failed\n";
             }
-        }else{
-            echo "Tasker is not alive\n";
         }
         return $ret;
     }
@@ -211,21 +149,5 @@ class Master
             }
         }
         return $ret;
-    }
-
-    /**
-     * Loads the configuration specified in .env file
-     */
-    private function loadConfiguration(){
-        //Check if configuration file exists
-        if(!file_exists(__DIR__.'/../../.env')){
-            echo "Configuration file .env has not been found.\n";
-            echo "You should place .env file (or edit and rename .env.example) in the folder\n";
-            echo realpath(__DIR__.'/../../')."\n";
-            die();
-        }else{
-            $dotenv = new Dotenv(realpath(__DIR__.'/../../'), '.env');
-            $dotenv->load();
-        }
     }
 }
