@@ -34,7 +34,7 @@ class Tasker
     }
     private function listenOn($port){
         //try to open a free listening port
-        $this->sock = stream_socket_server("tcp://0.0.0.0:".$port, $errno, $errstr);
+        $this->sock = stream_socket_server("tcp://".$_ENV['LISTENING_INTERFACE'].":".$port, $errno, $errstr);
         if (!$this->sock) {
             echo "$errstr ($errno)<br />\n";
             exit(1);
